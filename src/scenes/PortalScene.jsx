@@ -18,10 +18,12 @@ export default function PortalScene() {
 
   // Generate random particles
   const particles = useMemo(() => {
-    const count = 500;
+    const count = 2000;
     const positions = new Float32Array(count * 3);
-    for (let i = 0; i < count * 3; i++) {
-      positions[i] = (Math.random() - 0.5) * 5; // Spread in space
+    for (let i = 0; i < count; i++) {
+      positions[i * 3 + 0] = (Math.random() - 0.5) * 20;  // X: massive spread to cover deep frustum
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 20;  // Y: massive spread to cover deep frustum
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 15 - 3; // Z: huge depth, extending far into the background
     }
     return positions;
   }, []);
@@ -162,14 +164,14 @@ export default function PortalScene() {
       const mouseOffsetX = mouseRef.current.x - 0.5;
       const mouseOffsetY = mouseRef.current.y - 0.5;
       
-      // Apply parallax rotation based on mouse
-      particlesRef.current.rotation.x = mouseOffsetY * 0.5;
-      particlesRef.current.rotation.y = baseRotationY + (mouseOffsetX * 0.5);
+      // Apply parallax rotation based on mouse (reduced sensitivity)
+      particlesRef.current.rotation.x = mouseOffsetY * 0.15;
+      particlesRef.current.rotation.y = baseRotationY + (mouseOffsetX * 0.15);
       particlesRef.current.rotation.z = baseRotationZ;
       
-      // Apply slight position shift based on mouse
-      particlesRef.current.position.x = mouseOffsetX * -1.0;
-      particlesRef.current.position.y = mouseOffsetY * -1.0;
+      // Apply slight position shift based on mouse (reduced sensitivity)
+      particlesRef.current.position.x = mouseOffsetX * -0.4;
+      particlesRef.current.position.y = mouseOffsetY * -0.4;
       
       // Move particles with progress
       particlesRef.current.position.z = progressRef.current * 2;
@@ -221,10 +223,10 @@ export default function PortalScene() {
           />
         </bufferGeometry>
         <pointsMaterial
-          size={0.06}
+          size={0.12}
           color="#ffffff"
           transparent
-          opacity={0.8}
+          opacity={0.9}
           map={starTexture}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
