@@ -156,18 +156,14 @@ export default function PortalScene() {
 
     // Animate particles
     if (particlesRef.current) {
-      // Base rotation over time
-      const baseRotationY = time * 0.02;
-      const baseRotationZ = time * 0.01;
-      
       // Calculate mouse offset from center (-0.5 to 0.5)
       const mouseOffsetX = mouseRef.current.x - 0.5;
       const mouseOffsetY = mouseRef.current.y - 0.5;
       
       // Apply parallax rotation based on mouse (reduced sensitivity)
       particlesRef.current.rotation.x = mouseOffsetY * 0.15;
-      particlesRef.current.rotation.y = baseRotationY + (mouseOffsetX * 0.15);
-      particlesRef.current.rotation.z = baseRotationZ;
+      particlesRef.current.rotation.y = mouseOffsetX * 0.15;
+      particlesRef.current.rotation.z = 0;
       
       // Apply slight position shift based on mouse (reduced sensitivity)
       particlesRef.current.position.x = mouseOffsetX * -0.4;
