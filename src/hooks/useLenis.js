@@ -17,6 +17,9 @@ export default function useLenis() {
       infinite: false,
     });
 
+    // Expose instance globally so the WebGL shader can subscribe to smooth scroll values
+    window.__lenis = lenis;
+
     // Force immediate scroll to top on page load
     lenis.scrollTo(0, { immediate: true });
 

@@ -87,24 +87,47 @@ export default function PortalScene() {
   }, []);
 
   useEffect(() => {
-    const handleScroll = () => {
-      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const progress = window.scrollY / scrollHeight;
-      targetProgressRef.current = progress;
-    };
-
     const handleMouseMove = (e) => {
       targetMouseRef.current.x = e.clientX / window.innerWidth;
-      targetMouseRef.current.y = 1.0 - (e.clientY / window.innerHeight); // Flip Y for WebGL
+      targetMouseRef.current.y = 1.0 - (e.clientY / window.innerHeight);
     };
 
-    window.addEventListener('scroll', handleScroll);
+    // Read from Lenis for a perfectly smooth, interpolated scroll position
+    // Lenis exposes its smoothed scroll value via a scroll event with { scroll, limit }
+    const handleLenisScroll = ({ scroll, limit }) => {
+      targetProgressRef.current = limit > 0 ? scroll / limit : 0;
+    };
+
+    // Find the global Lenis instance - it attaches to window.lenis by convention
+    // We poll briefly until it's ready, then subscribe
+    const subscribe = () => {
+      if (window.__lenis) {
+        window.__lenis.on('scroll', handleLenisScroll);
+        // Set initial value immediately
+        const limit = window.__lenis.limit;
+        const scroll = window.__lenis.scroll;
+        targetProgressRef.current = limit > 0 ? scroll / limit : 0;
+        return true;
+      }
+      return false;
+    };
+
+    // Fallback to raw scroll if Lenis isn't found
+    const handleRawScroll = () => {
+      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+      targetProgressRef.current = scrollHeight > 0 ? window.scrollY / scrollHeight : 0;
+    };
+
+    if (!subscribe()) {
+      window.addEventListener('scroll', handleRawScroll);
+      handleRawScroll();
+    }
+
     window.addEventListener('mousemove', handleMouseMove);
 
-    handleScroll();
-
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      if (window.__lenis) window.__lenis.off('scroll', handleLenisScroll);
+      window.removeEventListener('scroll', handleRawScroll);
       window.removeEventListener('mousemove', handleMouseMove);
     };
   }, []);
@@ -113,12 +136,14 @@ export default function PortalScene() {
     const time = state.clock.getElapsedTime();
     
     if (materialRef.current) {
-      // Use direct progress to perfectly sync with the DOM overlay (Lenis handles smoothing)
-      progressRef.current = targetProgressRef.current;
+      // Smooth lerp using delta time for frame-rate independent easing.
+      // Factor of 12 gives fast response but irons out discrete scroll event jitter.
+      const lerpFactor = 1 - Math.exp(-12 * delta);
+      progressRef.current += (targetProgressRef.current - progressRef.current) * lerpFactor;
       
-      // Lerp mouse
-      mouseRef.current.x += (targetMouseRef.current.x - mouseRef.current.x) * 0.05;
-      mouseRef.current.y += (targetMouseRef.current.y - mouseRef.current.y) * 0.05;
+      // Lerp mouse with same technique
+      mouseRef.current.x += (targetMouseRef.current.x - mouseRef.current.x) * lerpFactor;
+      mouseRef.current.y += (targetMouseRef.current.y - mouseRef.current.y) * lerpFactor;
 
       // Update uniforms
       materialRef.current.uniforms.uTime.value = time;
